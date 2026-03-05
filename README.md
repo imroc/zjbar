@@ -72,6 +72,44 @@ default_tab_template {
 }
 ```
 
+### Manual build & install
+
+If you use a Claude Code compatible tool that stores settings in a different location (e.g. `~/.codebuddy/settings.json` instead of `~/.claude/settings.json`), the auto-installer won't register hooks correctly. In that case, build and set up manually:
+
+```bash
+git clone https://github.com/imroc/zjbar.git
+cd zjbar
+
+# Build the WASM plugin
+cargo build --release --target wasm32-wasip1
+
+# Copy plugin and hook script to zellij plugins directory
+cp target/wasm32-wasip1/release/zjbar.wasm ~/.config/zellij/plugins/
+cp scripts/zjbar-hook.sh ~/.config/zellij/plugins/
+chmod +x ~/.config/zellij/plugins/zjbar-hook.sh
+```
+
+Then manually register the hook in your tool's settings JSON (e.g. `~/.codebuddy/settings.json`):
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }],
+    "PostToolUse": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }],
+    "PostToolUseFailure": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }],
+    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }],
+    "PermissionRequest": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }],
+    "Notification": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }],
+    "Stop": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }],
+    "SubagentStop": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }],
+    "SessionStart": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }],
+    "SessionEnd": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }]
+  }
+}
+```
+
+Replace `/path/to/zjbar-hook.sh` with the actual path (e.g. `~/.config/zellij/plugins/zjbar-hook.sh`).
+
 ### Optional: click-to-focus notifications
 
 ```bash
