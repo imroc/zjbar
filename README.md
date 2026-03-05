@@ -2,8 +2,6 @@
 
 A Zellij status bar plugin that replaces the default tab bar with Claude Code activity awareness and a Catppuccin Mocha powerline theme.
 
-Forked from [zellaude](https://github.com/ishefi/zellaude) with a redesigned UI inspired by [zjstatus](https://github.com/dj95/zjstatus) gruvbox powerline style.
-
 ## Features
 
 - **Powerline tab bar** — Catppuccin Mocha themed tab bar with sharp powerline arrows between segments
@@ -106,10 +104,6 @@ Claude Code hook → zjbar-hook.sh → zellij pipe → plugin → render
 ```bash
 ./install.sh --uninstall
 ```
-
-## Credits
-
-Based on [zellaude](https://github.com/ishefi/zellaude) by Itamar Shefi.
 
 ## License
 
