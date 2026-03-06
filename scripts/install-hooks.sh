@@ -2,9 +2,10 @@
 # install-hooks.sh — Add zjbar hook entries to ~/.claude/settings.json
 #
 # Usage: ./scripts/install-hooks.sh [--uninstall]
+#        CLAUDE_SETTINGS=/path/to/settings.json ./scripts/install-hooks.sh
 set -euo pipefail
 
-SETTINGS="$HOME/.claude/settings.json"
+SETTINGS="${CLAUDE_SETTINGS:-$HOME/.claude/settings.json}"
 HOOK_SCRIPT="$(cd "$(dirname "$0")" && pwd)/zjbar-hook.sh"
 
 if ! command -v jq &>/dev/null; then
