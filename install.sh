@@ -74,10 +74,10 @@ green ""
 green "Installed! To use, add this to your Zellij layout:"
 echo ""
 echo '  default_tab_template {'
+echo '      children'
 echo '      pane size=1 borderless=true {'
 echo '          plugin location="file:~/.config/zellij/plugins/zjbar.wasm"'
 echo '      }'
-echo '      children'
 echo '  }'
 echo ""
 dim "Or start with the included layout: zellij --layout $PROJECT_DIR/layout.kdl"
