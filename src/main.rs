@@ -155,6 +155,9 @@ impl ZellijPlugin for State {
                 has_flashes || stale_changed || flash_changed || self.has_elapsed_display()
             }
             Event::PermissionRequestResult(_) => {
+                // Make plugin pane non-selectable so that Zellij core
+                // auto-closes tabs when the last terminal pane is removed.
+                set_selectable(false);
                 // Permissions granted — ask existing instances for their state
                 self.request_sync();
                 // Retry config load (the one in load() may have been dropped

@@ -42,10 +42,10 @@ Add the plugin to your Zellij layout — that's it:
 
 ```kdl
 default_tab_template {
+    children
     pane size=1 borderless=true {
         plugin location="https://github.com/imroc/zjbar/releases/latest/download/zjbar.wasm"
     }
-    children
 }
 ```
 
@@ -65,10 +65,10 @@ Then add the plugin to your Zellij layout:
 
 ```kdl
 default_tab_template {
+    children
     pane size=1 borderless=true {
         plugin location="file:~/.config/zellij/plugins/zjbar.wasm"
     }
-    children
 }
 ```
 
