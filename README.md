@@ -15,19 +15,19 @@ A Zellij status bar plugin that replaces the default tab bar with Claude Code ac
 
 ### Activity Symbols
 
-| Symbol | Meaning |
-|--------|---------|
-| ◆ | Session starting |
-| ● | Thinking |
-| ⚡ | Running Bash |
-| ◉ | Reading / searching files |
-| ✎ | Editing / writing files |
-| ⊜ | Spawning subagent |
-| ◈ | Web search / fetch |
-| ⚙ | Other tool |
-| ▶ | Waiting for user prompt |
-| ⚠ | Waiting for permission |
-| ✓ | Done |
+| Symbol | Meaning                   |
+| ------ | ------------------------- |
+| ◆      | Session starting          |
+| ●      | Thinking                  |
+| ⚡     | Running Bash              |
+| ◉      | Reading / searching files |
+| ✎      | Editing / writing files   |
+| ⊜      | Spawning subagent         |
+| ◈      | Web search / fetch        |
+| ⚙      | Other tool                |
+| ▶      | Waiting for user prompt   |
+| ⚠      | Waiting for permission    |
+| ✓      | Done                      |
 
 ## Install
 
@@ -61,54 +61,20 @@ cd zjbar
 ./install.sh
 ```
 
-Then add the plugin to your Zellij layout:
-
-```kdl
-default_tab_template {
-    children
-    pane size=1 borderless=true {
-        plugin location="file:~/.config/zellij/plugins/zjbar.wasm"
-    }
-}
-```
-
-### Manual build & install
-
-If you use a Claude Code compatible tool that stores settings in a different location (e.g. `~/.codebuddy/settings.json` instead of `~/.claude/settings.json`), the auto-installer won't register hooks correctly. In that case, build and set up manually:
+Or use make targets directly:
 
 ```bash
-git clone https://github.com/imroc/zjbar.git
-cd zjbar
-
-# Build the WASM plugin
-cargo build --release --target wasm32-wasip1
-
-# Copy plugin and hook script to zellij plugins directory
-cp target/wasm32-wasip1/release/zjbar.wasm ~/.config/zellij/plugins/
-cp scripts/zjbar-hook.sh ~/.config/zellij/plugins/
-chmod +x ~/.config/zellij/plugins/zjbar-hook.sh
+make            # build wasm + update plugin
+make install    # build + install layouts + register hooks
+make uninstall  # remove plugin, layouts and hooks
+make release    # create GitHub release (requires tag on HEAD)
 ```
 
-Then manually register the hook in your tool's settings JSON (e.g. `~/.codebuddy/settings.json`):
+If your Claude Code compatible tool stores settings in a different location (e.g. `~/.codebuddy/settings.json`), specify it via `CLAUDE_SETTINGS`:
 
-```json
-{
-  "hooks": {
-    "PreToolUse": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }],
-    "PostToolUse": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }],
-    "PostToolUseFailure": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }],
-    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }],
-    "PermissionRequest": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }],
-    "Notification": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }],
-    "Stop": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }],
-    "SubagentStop": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }],
-    "SessionStart": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }],
-    "SessionEnd": [{ "hooks": [{ "type": "command", "command": "/path/to/zjbar-hook.sh", "timeout": 5, "async": true }] }]
-  }
-}
+```bash
+CLAUDE_SETTINGS=~/.codebuddy/settings.json make install
 ```
-
-Replace `/path/to/zjbar-hook.sh` with the actual path (e.g. `~/.config/zellij/plugins/zjbar-hook.sh`).
 
 ### Optional: click-to-focus notifications
 
@@ -120,11 +86,11 @@ brew install terminal-notifier
 
 Click the session/mode prefix on the left side of the bar to open the settings menu.
 
-| Setting | Options | Default |
-|---------|---------|---------|
-| Notifications | Always / Unfocused / Off | Always |
-| Flash | Persist / Brief / Off | Brief |
-| Elapsed time | On / Off | On |
+| Setting       | Options                  | Default |
+| ------------- | ------------------------ | ------- |
+| Notifications | Always / Unfocused / Off | Always  |
+| Flash         | Persist / Brief / Off    | Brief   |
+| Elapsed time  | On / Off                 | On      |
 
 Settings are persisted to `~/.config/zellij/plugins/zjbar.json`.
 
@@ -140,7 +106,7 @@ Claude Code hook → zjbar-hook.sh → zellij pipe → plugin → render
 ## Uninstall
 
 ```bash
-./install.sh --uninstall
+make uninstall
 ```
 
 ## License
