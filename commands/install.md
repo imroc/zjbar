@@ -14,30 +14,24 @@ set -e
 
 PLUGIN_DIR="$HOME/.config/zellij/plugins"
 LAYOUT_DIR="$HOME/.config/zellij/layouts"
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-}"
-
-# Get latest release download URL
-WASM_URL="https://github.com/imroc/zjbar/releases/latest/download/zjbar.wasm"
+BASE_URL="https://raw.githubusercontent.com/imroc/zjbar/main"
 
 # Install WASM plugin
 mkdir -p "$PLUGIN_DIR"
 echo "Downloading zjbar.wasm..."
-if curl -fsSL "$WASM_URL" -o "$PLUGIN_DIR/zjbar.wasm"; then
+if curl -fsSL "https://github.com/imroc/zjbar/releases/latest/download/zjbar.wasm" -o "$PLUGIN_DIR/zjbar.wasm"; then
   echo "Installed: $PLUGIN_DIR/zjbar.wasm"
 else
   echo "Error: failed to download zjbar.wasm" >&2
   exit 1
 fi
 
-# Install layout files from plugin source
-if [ -n "$PLUGIN_ROOT" ] && [ -f "$PLUGIN_ROOT/layout.kdl" ]; then
-  mkdir -p "$LAYOUT_DIR"
-  cp "$PLUGIN_ROOT/layout.kdl" "$LAYOUT_DIR/zjbar.kdl"
-  cp "$PLUGIN_ROOT/layout.swap.kdl" "$LAYOUT_DIR/zjbar.swap.kdl"
-  echo "Installed layouts: $LAYOUT_DIR/zjbar.kdl"
-else
-  echo "Skipped layout install (plugin source not found)"
-fi
+# Install layout files
+mkdir -p "$LAYOUT_DIR"
+echo "Downloading layouts..."
+curl -fsSL "$BASE_URL/layout.kdl" -o "$LAYOUT_DIR/zjbar.kdl"
+curl -fsSL "$BASE_URL/layout.swap.kdl" -o "$LAYOUT_DIR/zjbar.swap.kdl"
+echo "Installed layouts: $LAYOUT_DIR/zjbar.kdl"
 
 echo ""
 echo "Done! Start zellij with: zellij --layout zjbar"
