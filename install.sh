@@ -3,22 +3,13 @@
 #
 # Checks prerequisites (jq, cargo, wasm target) then delegates to make.
 #
-# Usage:
-#   ./install.sh            # install everything
-#   ./install.sh --uninstall # remove everything
+# Usage: ./install.sh
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 red()   { printf '\033[31m%s\033[0m\n' "$*"; }
 green() { printf '\033[32m%s\033[0m\n' "$*"; }
-
-# ── Uninstall ──────────────────────────────────────────────
-
-if [ "${1:-}" = "--uninstall" ]; then
-    make -C "$PROJECT_DIR" uninstall
-    exit 0
-fi
 
 # ── Prerequisites ──────────────────────────────────────────
 
