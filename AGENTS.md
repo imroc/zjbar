@@ -9,8 +9,9 @@ zjbar is a Zellij WASM plugin that replaces the default tab bar with a Tokyo Nig
 ```
 src/
 ├── main.rs           # Plugin entry point (ZellijPlugin trait impl), event routing, state management
+├── config.rs         # BarConfig struct, KDL config parser, color/mode/activity helpers
 ├── render.rs         # Status bar rendering with ANSI escape codes and powerline arrows
-├── state.rs          # State types: Activity, SessionInfo, Settings, HookPayload, etc.
+├── state.rs          # State types: Activity, SessionInfo, HookPayload, etc.
 ├── event_handler.rs  # Maps Claude Code hook events to Activity states
 └── tab_pane_map.rs   # Maps pane IDs to (tab_index, tab_name) pairs
 scripts/
@@ -35,12 +36,12 @@ zellij --layout layout.kdl
 
 - **Rendering**: `render.rs` outputs raw ANSI escape codes via `print!()` in the `render()` method. Zellij captures stdout as pane content.
 - **IPC**: Claude Code hooks → `zjbar-hook.sh` → `zellij pipe --name zjbar` → plugin's `pipe()` method. Hook registration is manual via `make install-hooks`.
-- **Multi-instance sync**: Each tab has its own plugin instance. They sync state via `pipe_message_to_plugin()` with names like `zjbar:sync`, `zjbar:request`, `zjbar:settings`.
-- **Settings**: Persisted as JSON to `~/.config/zellij/plugins/zjbar.json`.
+- **Multi-instance sync**: Each tab has its own plugin instance. They sync state via `pipe_message_to_plugin()` with names like `zjbar:sync`, `zjbar:request`.
+- **Configuration**: All visual and behavioral settings are parsed from the KDL layout plugin block via `BarConfig::from_kdl()` in `config.rs`. No runtime settings file.
 
 ## Conventions
 
 - All commit messages and code comments must be in **English**.
 - The WASM target is `wasm32-wasip1` (configured in `.cargo/config.toml`).
 - Release profile uses `opt-level = "s"` and LTO for minimal binary size.
-- Color palette follows Tokyo Night. All color constants are defined in `render.rs`.
+- Color palette follows Tokyo Night. All color defaults are defined in `config.rs`.

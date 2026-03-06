@@ -1,11 +1,88 @@
-// zjbar example layout — plugin bar appears in every tab
+// zjbar — Zellij status bar with Tokyo Night theme
 // Usage: zellij --layout layout.kdl
+//
+// All settings below are optional and show default values.
+// Remove or comment out any line to use the default.
 
 layout {
     default_tab_template {
         children
         pane size=1 borderless=true {
-            plugin location="file:~/.config/zellij/plugins/zjbar.wasm"
+            plugin location="file:~/.config/zellij/plugins/zjbar.wasm" {
+                // -- Bar background --
+                // bar_bg "#1a1b26"
+
+                // -- Session pill --
+                // session_bg "#7aa2f7"
+                // session_fg "#16161e"
+
+                // -- Active tab --
+                // tab_active_bg "#292e42"
+                // tab_active_fg "#c0caf5"
+
+                // -- Inactive tab --
+                // tab_inactive_bg "#16161e"
+                // tab_inactive_fg "#a9b1d6"
+
+                // -- Tab separator (thin arrow between index and name) --
+                // tab_separator_fg "#565f89"
+
+                // -- Flash (permission request pulse) --
+                // flash_bg "#504620"
+                // flash_fg "#e0af68"
+
+                // -- Mode colors (bg + fg for each input mode) --
+                // mode_normal_bg "#9ece6a"
+                // mode_normal_fg "#16161e"
+                // mode_locked_bg "#f7768e"
+                // mode_locked_fg "#16161e"
+                // mode_pane_bg "#7dcfff"
+                // mode_pane_fg "#16161e"
+                // mode_tab_bg "#7dcfff"
+                // mode_tab_fg "#16161e"
+                // mode_resize_bg "#e0af68"
+                // mode_resize_fg "#16161e"
+                // mode_move_bg "#e0af68"
+                // mode_move_fg "#16161e"
+                // mode_scroll_bg "#ff9e64"
+                // mode_scroll_fg "#16161e"
+                // mode_search_bg "#ff9e64"
+                // mode_search_fg "#16161e"
+                // mode_entersearch_bg "#ff9e64"
+                // mode_entersearch_fg "#16161e"
+                // mode_session_bg "#bb9af7"
+                // mode_session_fg "#16161e"
+                // mode_prompt_bg "#bb9af7"
+                // mode_prompt_fg "#16161e"
+                // mode_renametab_bg "#e0af68"
+                // mode_renametab_fg "#16161e"
+                // mode_renamepane_bg "#e0af68"
+                // mode_renamepane_fg "#16161e"
+                // mode_tmux_bg "#7aa2f7"
+                // mode_tmux_fg "#16161e"
+
+                // -- Claude activity icon colors --
+                // activity_init_color "#7aa2f7"
+                // activity_thinking_color "#bb9af7"
+                // activity_tool_color "#ff9e64"
+                // activity_waiting_color "#f7768e"
+                // activity_permission_color "#f7768e"
+                // activity_done_color "#9ece6a"
+                // activity_prompt_color "#9ece6a"
+
+                // -- Elapsed time color --
+                // elapsed_fg "#565f89"
+
+                // -- Separators (powerline characters) --
+                // separator_left ""     // \ue0b0
+                // separator_right ""    // \ue0b2
+                // separator_tab ""      // \ue0b1
+
+                // -- Behavior --
+                // notifications "always"   // always | unfocused | off
+                // flash "brief"            // persist | brief | off
+                // elapsed_time "true"      // true | false
+            }
         }
     }
 }

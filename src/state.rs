@@ -1,3 +1,4 @@
+use crate::config::BarConfig;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -62,87 +63,9 @@ pub struct ClickRegion {
     pub is_waiting: bool,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
-pub enum NotifyMode {
-    Never,
-    Unfocused,
-    #[default]
-    Always,
-}
-
-impl NotifyMode {
-    pub fn cycle(self) -> Self {
-        match self {
-            Self::Always => Self::Unfocused,
-            Self::Unfocused => Self::Never,
-            Self::Never => Self::Always,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
-pub enum FlashMode {
-    Off,
-    #[default]
-    Once,
-    Persist,
-}
-
-impl FlashMode {
-    pub fn cycle(self) -> Self {
-        match self {
-            Self::Once => Self::Persist,
-            Self::Persist => Self::Off,
-            Self::Off => Self::Once,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]
-pub struct Settings {
-    pub notifications: NotifyMode,
-    pub flash: FlashMode,
-    pub elapsed_time: bool,
-}
-
-impl Default for Settings {
-    fn default() -> Self {
-        Self {
-            notifications: NotifyMode::Always,
-            flash: FlashMode::Once,
-            elapsed_time: true,
-        }
-    }
-}
-
-#[derive(Default, PartialEq)]
-pub enum ViewMode {
-    #[default]
-    Normal,
-    Settings,
-}
-
-#[derive(Clone, Copy)]
-pub enum SettingKey {
-    Notifications,
-    Flash,
-    ElapsedTime,
-}
-
-pub enum MenuAction {
-    ToggleSetting(SettingKey),
-    CloseMenu,
-}
-
-pub struct MenuClickRegion {
-    pub start_col: usize,
-    pub end_col: usize,
-    pub action: MenuAction,
-}
-
 #[derive(Default)]
 pub struct State {
+    pub config: BarConfig,
     pub sessions: BTreeMap<u32, SessionInfo>,
     pub pane_to_tab: HashMap<u32, (usize, String)>,
     pub tabs: Vec<TabInfo>,
@@ -154,9 +77,4 @@ pub struct State {
     pub zellij_session_name: Option<String>,
     pub term_program: Option<String>,
     pub input_mode: InputMode,
-    pub settings: Settings,
-    pub view_mode: ViewMode,
-    pub prefix_click_region: Option<(usize, usize)>,
-    pub menu_click_regions: Vec<MenuClickRegion>,
-    pub config_loaded: bool,
 }

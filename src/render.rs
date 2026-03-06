@@ -1,17 +1,8 @@
-use crate::state::{
-    unix_now, unix_now_ms, Activity, ClickRegion, FlashMode, MenuAction, MenuClickRegion,
-    NotifyMode, SessionInfo, SettingKey, State, ViewMode,
-};
+use crate::config::Color;
+use crate::state::{unix_now, unix_now_ms, Activity, ClickRegion, SessionInfo, State};
 use std::fmt::Write;
 use std::io::Write as IoWrite;
-use zellij_tile::prelude::{InputMode, TabInfo};
-
-struct Style {
-    symbol: &'static str,
-    r: u8,
-    g: u8,
-    b: u8,
-}
+use zellij_tile::prelude::TabInfo;
 
 fn activity_priority(activity: &Activity) -> u8 {
     match activity {
@@ -27,27 +18,23 @@ fn activity_priority(activity: &Activity) -> u8 {
     }
 }
 
-fn activity_style(activity: &Activity) -> Style {
+fn activity_symbol(activity: &Activity) -> &'static str {
     match activity {
-        Activity::Init => Style { symbol: "◆", r: 122, g: 162, b: 247 },       // blue
-        Activity::Thinking => Style { symbol: "●", r: 187, g: 154, b: 247 },    // purple
-        Activity::Tool(name) => {
-            let symbol = match name.as_str() {
-                "Bash" => "⚡",
-                "Read" | "Glob" | "Grep" => "◉",
-                "Edit" | "Write" => "✎",
-                "Task" => "⊜",
-                "WebSearch" | "WebFetch" => "◈",
-                _ => "⚙",
-            };
-            Style { symbol, r: 255, g: 158, b: 100 }  // orange
-        }
-        Activity::Prompting => Style { symbol: "▶", r: 158, g: 206, b: 106 },   // green
-        Activity::Waiting => Style { symbol: "⚠", r: 247, g: 118, b: 142 },     // red
-        Activity::Notification => Style { symbol: "◇", r: 224, g: 175, b: 104 }, // yellow
-        Activity::Done => Style { symbol: "✓", r: 158, g: 206, b: 106 },         // green
-        Activity::AgentDone => Style { symbol: "✓", r: 125, g: 207, b: 255 },    // cyan
-        Activity::Idle => Style { symbol: "○", r: 86, g: 95, b: 137 },           // comment
+        Activity::Init => "◆",
+        Activity::Thinking => "●",
+        Activity::Tool(name) => match name.as_str() {
+            "Bash" => "⚡",
+            "Read" | "Glob" | "Grep" => "◉",
+            "Edit" | "Write" => "✎",
+            "Task" => "⊜",
+            "WebSearch" | "WebFetch" => "◈",
+            _ => "⚙",
+        },
+        Activity::Prompting => "▶",
+        Activity::Waiting => "⚠",
+        Activity::Notification => "◇",
+        Activity::Done | Activity::AgentDone => "✓",
+        Activity::Idle => "○",
     }
 }
 
@@ -67,46 +54,6 @@ const RESET: &str = "\x1b[0m";
 const BOLD: &str = "\x1b[1m";
 const ELAPSED_THRESHOLD: u64 = 30;
 
-/// Powerline right-pointing solid arrow (thick separator between segments)
-const ARROW: &str = "\u{e0b0}";
-/// Powerline right-pointing thin arrow (thin separator within a segment)
-const ARROW_THIN: &str = "\u{e0b1}";
-
-type Color = (u8, u8, u8);
-
-// -- Tokyo Night palette --
-const BG: Color = (26, 27, 38);           // #1a1b26
-const BG_DARK: Color = (22, 22, 30);      // #16161e
-const BG_HIGHLIGHT: Color = (41, 46, 66); // #292e42
-const FG: Color = (192, 202, 245);        // #c0caf5
-const FG_DARK: Color = (169, 177, 214);   // #a9b1d6
-const COMMENT: Color = (86, 95, 137);     // #565f89
-
-const BLUE: Color = (122, 162, 247);      // #7aa2f7
-const CYAN: Color = (125, 207, 255);      // #7dcfff
-const GREEN: Color = (158, 206, 106);     // #9ece6a
-const ORANGE: Color = (255, 158, 100);    // #ff9e64
-const PURPLE: Color = (187, 154, 247);    // #bb9af7
-const RED: Color = (247, 118, 142);       // #f7768e
-const YELLOW: Color = (224, 175, 104);    // #e0af68
-
-// Bar background — match terminal background
-const BAR_BG: Color = BG;
-// Flash: yellow tint
-const FLASH_BG_BRIGHT: Color = (80, 70, 30);
-
-/// Write a powerline solid arrow: fg=from, bg=to, then ARROW char.
-fn arrow(buf: &mut String, col: &mut usize, from: Color, to: Color) {
-    let _ = write!(buf, "{}{}{ARROW}", fg_c(from), bg_c(to));
-    *col += 1;
-}
-
-/// Write a powerline thin arrow (within the same segment): fg=line_color, no bg change.
-fn arrow_thin(buf: &mut String, col: &mut usize, line_color: Color) {
-    let _ = write!(buf, "{}{ARROW_THIN}", fg_c(line_color));
-    *col += 1;
-}
-
 fn format_elapsed(secs: u64) -> String {
     if secs < 60 {
         format!("{secs}s")
@@ -117,31 +64,12 @@ fn format_elapsed(secs: u64) -> String {
     }
 }
 
-fn mode_style(mode: InputMode) -> (Color, &'static str) {
-    match mode {
-        InputMode::Normal => (GREEN, "NORMAL"),
-        InputMode::Locked => (RED, "LOCKED"),
-        InputMode::Pane => (CYAN, "PANE"),
-        InputMode::Tab => (CYAN, "TAB"),
-        InputMode::Resize => (YELLOW, "RESIZE"),
-        InputMode::Move => (YELLOW, "MOVE"),
-        InputMode::Scroll => (ORANGE, "SCROLL"),
-        InputMode::EnterSearch => (ORANGE, "SEARCH"),
-        InputMode::Search => (ORANGE, "SEARCH"),
-        InputMode::RenameTab => (YELLOW, "RENAME"),
-        InputMode::RenamePane => (YELLOW, "RENAME"),
-        InputMode::Session => (PURPLE, "SESSION"),
-        InputMode::Prompt => (PURPLE, "PROMPT"),
-        InputMode::Tmux => (BLUE, "TMUX"),
-    }
-}
-
 pub fn render_status_bar(state: &mut State, _rows: usize, cols: usize) {
     state.click_regions.clear();
-    state.menu_click_regions.clear();
 
+    let cfg = &state.config;
     let mut buf = String::with_capacity(cols * 4);
-    let bar_bg = bg_c(BAR_BG);
+    let bar_bg = bg_c(cfg.bar_bg);
     buf.push_str("\x1b[H\x1b[?7l\x1b[?25l");
 
     if cols < 5 {
@@ -151,8 +79,8 @@ pub fn render_status_bar(state: &mut State, _rows: usize, cols: usize) {
         return;
     }
 
-    // === Left prefix: [session pill][arrow][space][arrow][mode pill][arrow] ===
-    let (mode_color, mode_text) = mode_style(state.input_mode);
+    // === Left prefix: [session pill][arrow][mode pill][arrow] ===
+    let (mode_bg, mode_fg, mode_text) = cfg.mode_style(state.input_mode);
     let session_text = state
         .zellij_session_name
         .as_deref()
@@ -163,58 +91,51 @@ pub fn render_status_bar(state: &mut State, _rows: usize, cols: usize) {
     let mode_pill_text = format!(" {mode_text} ");
     let mode_pill_width = display_width(&mode_pill_text);
 
-    // Total prefix width: session + arrow(1) + arrow(1) + mode + arrow(1)
-    // (no leading arrow on session — flush left; no space between session and mode)
-    let total_prefix_width = session_pill_width + 1 + 1 + mode_pill_width + 1;
+    let sep_left_width = display_width(&cfg.separator_left);
+    let total_prefix_width = session_pill_width + sep_left_width + sep_left_width + mode_pill_width + sep_left_width;
 
     let mut col = 0usize;
     if total_prefix_width <= cols {
-        // session text (no leading arrow) [sapphire → mode]
+        // Session pill
         let _ = write!(
             buf,
             "{}{}{BOLD}{session_pill_text}{RESET}",
-            bg_c(BLUE), fg_c(BG_DARK),
+            bg_c(cfg.session_bg), fg_c(cfg.session_fg),
         );
         col += session_pill_width;
-        arrow(&mut buf, &mut col, BLUE, mode_color);
+        // Arrow: session → mode
+        let _ = write!(buf, "{}{}{}", fg_c(cfg.session_bg), bg_c(mode_bg), cfg.separator_left);
+        col += sep_left_width;
 
-        // mode text [mode → bar_bg]
+        // Mode pill
         let _ = write!(
             buf,
             "{}{}{BOLD}{mode_pill_text}{RESET}",
-            bg_c(mode_color), fg_c(BG_DARK),
+            bg_c(mode_bg), fg_c(mode_fg),
         );
         col += mode_pill_width;
-        arrow(&mut buf, &mut col, mode_color, BAR_BG);
-    } else if session_pill_width + 1 <= cols {
+        // Arrow: mode → bar_bg
+        let _ = write!(buf, "{}{}{}", fg_c(mode_bg), bar_bg, cfg.separator_left);
+        col += sep_left_width;
+    } else if session_pill_width + sep_left_width <= cols {
         let _ = write!(
             buf,
             "{}{}{BOLD}{session_pill_text}{RESET}",
-            bg_c(BLUE), fg_c(BG_DARK),
+            bg_c(cfg.session_bg), fg_c(cfg.session_fg),
         );
         col += session_pill_width;
-        arrow(&mut buf, &mut col, BLUE, BAR_BG);
+        let _ = write!(buf, "{}{}{}", fg_c(cfg.session_bg), bar_bg, cfg.separator_left);
+        col += sep_left_width;
     }
 
-    state.prefix_click_region = Some((0, col));
-    let prefix_used = col;
-
     if col < cols {
-        match state.view_mode {
-            ViewMode::Normal => {
-                render_tabs(state, &mut buf, &mut col, cols, prefix_used);
-            }
-            ViewMode::Settings => {
-                let _ = write!(buf, "{bar_bg}");
-                render_settings_menu(state, &mut buf, &mut col);
-            }
-        }
+        render_tabs(state, &mut buf, &mut col, cols);
     }
 
     // Fill remaining with bar bg
     if col < cols {
         let remaining = cols - col;
-        let _ = write!(buf, "{bar_bg}{:width$}", "", width = remaining);
+        let _ = write!(buf, "{}{:width$}", bg_c(state.config.bar_bg), "", width = remaining);
     }
     let _ = write!(buf, "{RESET}");
 
@@ -222,19 +143,13 @@ pub fn render_status_bar(state: &mut State, _rows: usize, cols: usize) {
     let _ = std::io::stdout().flush();
 }
 
-/// Render tabs in powerline style with Tokyo Night colors.
-///
-/// Each tab: `[bar→accent ARROW][accent: " index "][accent: THIN_ARROW][accent: " name "][accent→bar ARROW]`
-///
-/// Active tab: peach accent, inactive: surface0 accent.
-/// Claude activity icon shown inline after name.
 fn render_tabs(
     state: &mut State,
     buf: &mut String,
     col: &mut usize,
     cols: usize,
-    _prefix_width: usize,
 ) {
+    let cfg = &state.config;
     let now_s = unix_now();
     let now_ms = unix_now_ms();
 
@@ -245,6 +160,9 @@ fn render_tabs(
     if count == 0 {
         return;
     }
+
+    let sep_left_width = display_width(&cfg.separator_left);
+    let sep_tab_width = display_width(&cfg.separator_tab);
 
     // For each tab, find the best Claude session
     let best_sessions: Vec<Option<&SessionInfo>> = tabs
@@ -262,7 +180,7 @@ fn render_tabs(
     let elapsed_strs: Vec<Option<String>> = best_sessions
         .iter()
         .map(|session: &Option<&SessionInfo>| {
-            if !state.settings.elapsed_time {
+            if !cfg.elapsed_time {
                 return None;
             }
             session.and_then(|s| {
@@ -276,13 +194,11 @@ fn render_tabs(
         })
         .collect();
 
-    // Compute max tab name length.
-    // Each tab: leading_arrow(1) + " index "(~3-4) + thin_arrow(1) + " name " + trailing_arrow(1)
-    // Claude tabs add " symbol"(2).
+    // Compute max tab name length
     let fixed_per_tab: usize = tabs.iter().map(|t| {
         let idx_str = format!("{}", t.position + 1);
-        // leading_arrow + space + index + space + thin_arrow + trailing_space + trailing_arrow
-        1 + 1 + idx_str.len() + 1 + 1 + 1 + 1
+        // leading_sep + space + index + space + thin_sep + trailing_space + trailing_sep
+        sep_left_width + 1 + idx_str.len() + 1 + sep_tab_width + 1 + sep_left_width
     }).sum();
     let claude_overhead: usize = best_sessions
         .iter()
@@ -293,7 +209,7 @@ fn render_tabs(
         .map(|e| e.as_ref().map_or(0, |s| 1 + s.len()))
         .sum();
 
-    let overhead = *col + fixed_per_tab + claude_overhead + elapsed_overhead + count; // +count for leading space in name area
+    let overhead = *col + fixed_per_tab + claude_overhead + elapsed_overhead + count;
     let max_name_len = if overhead < cols {
         ((cols - overhead) / count).min(20)
     } else {
@@ -323,26 +239,22 @@ fn render_tabs(
                     .unwrap_or(false)
             });
 
-        // Tab background color: active=highlight, inactive=dark, flash=yellow
+        // Tab colors
         let tab_bg = if is_flash_bright {
-            FLASH_BG_BRIGHT
+            cfg.flash_bg
         } else if is_active {
-            BG_HIGHLIGHT
+            cfg.tab_active_bg
         } else {
-            BG_DARK
+            cfg.tab_inactive_bg
         };
 
-        // Text color on the tab
         let tab_fg = if is_flash_bright {
-            YELLOW
+            cfg.flash_fg
         } else if is_active {
-            FG     // bright text on highlight bg
+            cfg.tab_active_fg
         } else {
-            FG_DARK // dimmer text on dark bg
+            cfg.tab_inactive_fg
         };
-
-        // Thin arrow line color (between index and name)
-        let thin_color = if is_active { COMMENT } else { COMMENT };
 
         // Truncate name
         let char_count = tab_name.chars().count();
@@ -358,7 +270,8 @@ fn render_tabs(
         let region_start = *col;
 
         // Leading arrow: [bar_bg → tab_bg]
-        arrow(buf, col, BAR_BG, tab_bg);
+        let _ = write!(buf, "{}{}{}", fg_c(cfg.bar_bg), bg_c(tab_bg), cfg.separator_left);
+        *col += sep_left_width;
 
         // Index part: " N "
         let idx_str = format!("{}", tab.position + 1);
@@ -367,11 +280,11 @@ fn render_tabs(
             "{}{}{BOLD} {} {RESET}",
             bg_c(tab_bg), fg_c(tab_fg), idx_str,
         );
-        *col += 1 + idx_str.len() + 1; // " N "
+        *col += 1 + idx_str.len() + 1;
 
-        // Thin arrow separator between index and name (stays on same bg)
-        let _ = write!(buf, "{}", bg_c(tab_bg));
-        arrow_thin(buf, col, thin_color);
+        // Thin separator between index and name
+        let _ = write!(buf, "{}{}{}", bg_c(tab_bg), fg_c(cfg.tab_separator_fg), cfg.separator_tab);
+        *col += sep_tab_width;
 
         // Name part: " name "
         let _ = write!(
@@ -389,16 +302,15 @@ fn render_tabs(
         // Claude activity indicator
         if is_claude {
             let s = session.unwrap();
-            let style = activity_style(&s.activity);
-
             if !matches!(s.activity, Activity::Idle) {
-                let sym_fg = if is_flash_bright {
-                    fg_c(YELLOW)
+                let symbol = activity_symbol(&s.activity);
+                let icon_color = if is_flash_bright {
+                    cfg.flash_fg
                 } else {
-                    format!("\x1b[38;2;{};{};{}m", style.r, style.g, style.b)
+                    cfg.activity_color(&s.activity)
                 };
-                let _ = write!(buf, " {RESET}{}{sym_fg}{}", bg_c(tab_bg), style.symbol);
-                *col += 1 + display_width(style.symbol);
+                let _ = write!(buf, " {RESET}{}{}{}", bg_c(tab_bg), fg_c(icon_color), symbol);
+                *col += 1 + display_width(symbol);
             }
 
             if let Some(ref es) = elapsed_strs[i] {
@@ -406,19 +318,18 @@ fn render_tabs(
                     let _ = write!(
                         buf,
                         " {RESET}{}{}{}",
-                        bg_c(tab_bg), fg_c(COMMENT), es,
+                        bg_c(tab_bg), fg_c(cfg.elapsed_fg), es,
                     );
                     *col += 1 + es.len();
                 }
             }
         }
 
-        // Trailing space + closing arrow: [tab_bg → bar_bg]
-        let _ = write!(buf, "{RESET}{}", bg_c(tab_bg));
-        // trailing space before arrow
-        let _ = write!(buf, " ");
+        // Trailing space + closing arrow
+        let _ = write!(buf, "{RESET}{} ", bg_c(tab_bg));
         *col += 1;
-        arrow(buf, col, tab_bg, BAR_BG);
+        let _ = write!(buf, "{}{}{}", fg_c(tab_bg), bg_c(cfg.bar_bg), cfg.separator_left);
+        *col += sep_left_width;
 
         // Register click region
         if is_claude {
@@ -445,101 +356,4 @@ fn render_tabs(
             });
         }
     }
-}
-
-fn notify_mode_label(mode: NotifyMode) -> (&'static str, &'static str, String, String) {
-    match mode {
-        NotifyMode::Always => ("●", "Notify: always", fg_c(GREEN), fg_c(FG)),
-        NotifyMode::Unfocused => ("◐", "Notify: unfocused", fg_c(YELLOW), fg_c(YELLOW)),
-        NotifyMode::Never => ("○", "Notify: off", fg_c(COMMENT), fg_c(COMMENT)),
-    }
-}
-
-fn flash_mode_label(mode: FlashMode) -> (&'static str, &'static str, String, String) {
-    match mode {
-        FlashMode::Persist => ("●", "Flash: persist", fg_c(GREEN), fg_c(FG)),
-        FlashMode::Once => ("◐", "Flash: brief", fg_c(YELLOW), fg_c(YELLOW)),
-        FlashMode::Off => ("○", "Flash: off", fg_c(COMMENT), fg_c(COMMENT)),
-    }
-}
-
-/// Render a three-state toggle and register its click region.
-fn render_tristate(
-    buf: &mut String,
-    col: &mut usize,
-    state_regions: &mut Vec<MenuClickRegion>,
-    key: SettingKey,
-    symbol: &str,
-    label: &str,
-    sym_color: &str,
-    label_color: &str,
-) {
-    let region_start = *col;
-    let width = display_width(symbol) + 1 + label.len();
-    *col += width;
-
-    state_regions.push(MenuClickRegion {
-        start_col: region_start,
-        end_col: *col,
-        action: MenuAction::ToggleSetting(key),
-    });
-
-    let _ = write!(buf, "{sym_color}{symbol} {label_color}{label}");
-}
-
-fn render_settings_menu(state: &mut State, buf: &mut String, col: &mut usize) {
-    let _ = write!(buf, " ");
-    *col += 1;
-
-    // Notifications
-    {
-        let (symbol, label, sym_color, label_color) =
-            notify_mode_label(state.settings.notifications);
-        render_tristate(
-            buf, col, &mut state.menu_click_regions,
-            SettingKey::Notifications, symbol, label, &sym_color, &label_color,
-        );
-    }
-
-    // Flash
-    {
-        let _ = write!(buf, "  ");
-        *col += 2;
-        let (symbol, label, sym_color, label_color) =
-            flash_mode_label(state.settings.flash);
-        render_tristate(
-            buf, col, &mut state.menu_click_regions,
-            SettingKey::Flash, symbol, label, &sym_color, &label_color,
-        );
-    }
-
-    // Elapsed time
-    {
-        let _ = write!(buf, "  ");
-        *col += 2;
-        let enabled = state.settings.elapsed_time;
-        let (symbol, sym_color, label_color) = if enabled {
-            ("●", fg_c(GREEN), fg_c(FG))
-        } else {
-            ("○", fg_c(COMMENT), fg_c(COMMENT))
-        };
-        let label = if enabled { "Elapsed time: on" } else { "Elapsed time: off" };
-        render_tristate(
-            buf, col, &mut state.menu_click_regions,
-            SettingKey::ElapsedTime, symbol, label, &sym_color, &label_color,
-        );
-    }
-
-    // Close button
-    let _ = write!(buf, "  ");
-    *col += 2;
-    let close_start = *col;
-    let _ = write!(buf, "{}×", fg_c(RED));
-    *col += 1;
-
-    state.menu_click_regions.push(MenuClickRegion {
-        start_col: close_start,
-        end_col: *col,
-        action: MenuAction::CloseMenu,
-    });
 }

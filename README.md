@@ -98,17 +98,42 @@ brew install terminal-notifier
 | ⚠      | Waiting for permission    |
 | ✓      | Done                      |
 
-## Settings
+## Configuration
 
-Click the session/mode prefix on the left side of the bar to open the settings menu.
+All visual and behavioral settings are configured via the KDL layout file. Every option is optional — defaults use the Tokyo Night theme.
 
-| Setting       | Options                  | Default |
-| ------------- | ------------------------ | ------- |
-| Notifications | Always / Unfocused / Off | Always  |
-| Flash         | Persist / Brief / Off    | Brief   |
-| Elapsed time  | On / Off                 | On      |
+```kdl
+plugin location="zjbar.wasm" {
+    // Colors: any "#rrggbb" hex value
+    bar_bg          "#1a1b26"
+    session_bg      "#7aa2f7"
+    session_fg      "#16161e"
+    tab_active_bg   "#292e42"
+    tab_active_fg   "#c0caf5"
+    tab_inactive_bg "#16161e"
+    tab_inactive_fg "#a9b1d6"
 
-Settings are persisted to `~/.config/zellij/plugins/zjbar.json`.
+    // Mode colors: mode_<name>_bg / mode_<name>_fg
+    // Modes: normal, locked, pane, tab, resize, move, scroll,
+    //        search, entersearch, session, prompt, renametab,
+    //        renamepane, tmux
+
+    // Activity icon colors
+    activity_thinking_color "#bb9af7"
+    activity_tool_color     "#ff9e64"
+
+    // Separators (powerline characters)
+    separator_left ""     // \ue0b0
+    separator_tab  ""     // \ue0b1
+
+    // Behavior
+    notifications "always"   // always | unfocused | off
+    flash         "brief"    // persist | brief | off
+    elapsed_time  "true"     // true | false
+}
+```
+
+See [layout.kdl](layout.kdl) for the full list of available options with defaults.
 
 ## How It Works
 

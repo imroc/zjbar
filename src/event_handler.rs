@@ -1,4 +1,5 @@
-use crate::state::{Activity, FlashMode, HookPayload, SessionInfo, State};
+use crate::config::FlashMode;
+use crate::state::{Activity, HookPayload, SessionInfo, State};
 
 pub fn handle_hook_event(state: &mut State, payload: HookPayload) {
     // Capture env info for use in notifications
@@ -25,7 +26,6 @@ pub fn handle_hook_event(state: &mut State, payload: HookPayload) {
         "PostToolUse" | "PostToolUseFailure" => Activity::Thinking,
         "UserPromptSubmit" => Activity::Thinking,
         "PermissionRequest" => Activity::Waiting,
-        // Notification is informational — just refresh the timestamp, keep current activity.
         "Notification" => {
             if let Some(session) = state.sessions.get_mut(&payload.pane_id) {
                 session.last_event_ts = crate::state::unix_now();
@@ -57,8 +57,8 @@ pub fn handle_hook_event(state: &mut State, payload: HookPayload) {
         });
 
     if matches!(activity, Activity::Waiting) {
-        match state.settings.flash {
-            FlashMode::Once => {
+        match state.config.flash {
+            FlashMode::Brief => {
                 state.flash_deadlines.insert(
                     payload.pane_id,
                     crate::state::unix_now_ms() + crate::state::FLASH_DURATION_MS,
@@ -69,8 +69,6 @@ pub fn handle_hook_event(state: &mut State, payload: HookPayload) {
             }
             FlashMode::Off => {}
         }
-        // Desktop notification is handled by the hook script to avoid
-        // duplicates from multiple plugin instances.
     } else {
         state.flash_deadlines.remove(&payload.pane_id);
     }

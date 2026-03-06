@@ -1,9 +1,11 @@
+mod config;
 mod event_handler;
 mod render;
 mod state;
 mod tab_pane_map;
 
-use state::{unix_now, unix_now_ms, HookPayload, MenuAction, SessionInfo, Settings, State, ViewMode};
+use config::BarConfig;
+use state::{unix_now, unix_now_ms, HookPayload, SessionInfo, State};
 use std::collections::BTreeMap;
 use zellij_tile::prelude::*;
 
@@ -14,11 +16,12 @@ const FLASH_TICK: f64 = 0.25;
 register_plugin!(State);
 
 impl ZellijPlugin for State {
-    fn load(&mut self, _configuration: BTreeMap<String, String>) {
+    fn load(&mut self, configuration: BTreeMap<String, String>) {
+        self.config = BarConfig::from_kdl(&configuration);
+
         request_permission(&[
             PermissionType::ReadApplicationState,
             PermissionType::ChangeApplicationState,
-            PermissionType::RunCommands,
             PermissionType::ReadCliPipes,
             PermissionType::MessageAndLaunchOtherPlugins,
         ]);
@@ -28,14 +31,9 @@ impl ZellijPlugin for State {
             EventType::ModeUpdate,
             EventType::Timer,
             EventType::Mouse,
-            EventType::RunCommandResult,
             EventType::PermissionRequestResult,
         ]);
         set_timeout(TIMER_INTERVAL);
-
-        // Load persisted settings (may be retried in PermissionRequestResult
-        // if this fires before permissions are granted)
-        self.load_config();
     }
 
     fn update(&mut self, event: Event) -> bool {
@@ -43,7 +41,6 @@ impl ZellijPlugin for State {
             Event::TabUpdate(tabs) => {
                 let new_active = tabs.iter().find(|t| t.active).map(|t| t.position);
                 if new_active != self.active_tab_index {
-                    // Tab focus changed — clear persist flashes on the newly focused tab
                     if let Some(idx) = new_active {
                         self.clear_flashes_on_tab(idx);
                     }
@@ -67,76 +64,17 @@ impl ZellijPlugin for State {
             }
             Event::Mouse(Mouse::LeftClick(_, col)) => {
                 let col = col as usize;
-
-                // Check prefix click region first → toggle ViewMode
-                if let Some((start, end)) = self.prefix_click_region {
-                    if col >= start && col < end {
-                        self.view_mode = match self.view_mode {
-                            ViewMode::Normal => ViewMode::Settings,
-                            ViewMode::Settings => ViewMode::Normal,
-                        };
-                        return true;
+                for region in &self.click_regions {
+                    if col >= region.start_col && col < region.end_col {
+                        if region.is_waiting {
+                            focus_terminal_pane(region.pane_id, false);
+                        } else {
+                            switch_tab_to(region.tab_index as u32 + 1);
+                        }
+                        return false;
                     }
                 }
-
-                match self.view_mode {
-                    ViewMode::Normal => {
-                        for region in &self.click_regions {
-                            if col >= region.start_col && col < region.end_col {
-                                if region.is_waiting {
-                                    focus_terminal_pane(region.pane_id, false);
-                                } else {
-                                    switch_tab_to(region.tab_index as u32 + 1);
-                                }
-                                return false;
-                            }
-                        }
-                        false
-                    }
-                    ViewMode::Settings => {
-                        for region in &self.menu_click_regions {
-                            if col >= region.start_col && col < region.end_col {
-                                match &region.action {
-                                    MenuAction::ToggleSetting(key) => {
-                                        match key {
-                                            state::SettingKey::Notifications => {
-                                                self.settings.notifications =
-                                                    self.settings.notifications.cycle();
-                                            }
-                                            state::SettingKey::Flash => {
-                                                self.settings.flash =
-                                                    self.settings.flash.cycle();
-                                            }
-                                            state::SettingKey::ElapsedTime => {
-                                                self.settings.elapsed_time =
-                                                    !self.settings.elapsed_time;
-                                            }
-                                        }
-                                        self.save_config();
-                                    }
-                                    MenuAction::CloseMenu => {
-                                        self.view_mode = ViewMode::Normal;
-                                    }
-                                }
-                                return true;
-                            }
-                        }
-                        false
-                    }
-                }
-            }
-            Event::RunCommandResult(exit_code, stdout, _stderr, context) => {
-                match context.get("type").map(|s| s.as_str()) {
-                    Some("load_config") if exit_code == Some(0) => {
-                        let raw = String::from_utf8_lossy(&stdout);
-                        if let Ok(settings) = serde_json::from_str::<Settings>(raw.trim()) {
-                            self.settings = settings;
-                        }
-                        self.config_loaded = true;
-                        true
-                    }
-                    _ => false,
-                }
+                false
             }
             Event::Timer(_) => {
                 let stale_changed = self.cleanup_stale_sessions();
@@ -150,16 +88,8 @@ impl ZellijPlugin for State {
                 has_flashes || stale_changed || flash_changed || self.has_elapsed_display()
             }
             Event::PermissionRequestResult(_) => {
-                // Make plugin pane non-selectable so that Zellij core
-                // auto-closes tabs when the last terminal pane is removed.
                 set_selectable(false);
-                // Permissions granted — ask existing instances for their state
                 self.request_sync();
-                // Retry config load (the one in load() may have been dropped
-                // because it ran before permissions were granted)
-                if !self.config_loaded {
-                    self.load_config();
-                }
                 false
             }
             _ => false,
@@ -169,7 +99,6 @@ impl ZellijPlugin for State {
     fn pipe(&mut self, pipe_message: PipeMessage) -> bool {
         match pipe_message.name.as_str() {
             "zjbar" => {
-                // Hook event from CLI
                 let payload_str = match pipe_message.payload {
                     Some(ref s) => s,
                     None => return false,
@@ -182,7 +111,6 @@ impl ZellijPlugin for State {
                 true
             }
             "zjbar:focus" => {
-                // Notification click — focus the requested pane
                 if let Some(ref payload) = pipe_message.payload {
                     if let Ok(pane_id) = payload.trim().parse::<u32>() {
                         focus_terminal_pane(pane_id, false);
@@ -191,22 +119,10 @@ impl ZellijPlugin for State {
                 false
             }
             "zjbar:request" => {
-                // Another instance asking for state — respond with ours
                 self.broadcast_sessions();
                 false
             }
-            "zjbar:settings" => {
-                // Another instance broadcast new settings
-                if let Some(ref payload) = pipe_message.payload {
-                    if let Ok(settings) = serde_json::from_str::<Settings>(payload) {
-                        self.settings = settings;
-                        return true;
-                    }
-                }
-                false
-            }
             "zjbar:sync" => {
-                // Another instance sharing state — merge it
                 if let Some(ref payload) = pipe_message.payload {
                     if let Ok(sessions) =
                         serde_json::from_str::<BTreeMap<u32, SessionInfo>>(payload)
@@ -291,7 +207,7 @@ impl State {
     }
 
     fn has_elapsed_display(&self) -> bool {
-        if !self.settings.elapsed_time {
+        if !self.config.elapsed_time {
             return false;
         }
         let now = unix_now();
@@ -312,41 +228,6 @@ impl State {
         pipe_message_to_plugin(msg);
     }
 
-    fn broadcast_settings(&self) {
-        let mut msg = MessageToPlugin::new("zjbar:settings");
-        msg.message_payload =
-            Some(serde_json::to_string(&self.settings).unwrap_or_default());
-        pipe_message_to_plugin(msg);
-    }
-
-    fn load_config(&self) {
-        let mut ctx = BTreeMap::new();
-        ctx.insert("type".into(), "load_config".into());
-        run_command(
-            &[
-                "sh",
-                "-c",
-                "cat \"$HOME/.config/zellij/plugins/zjbar.json\" 2>/dev/null || echo '{}'",
-            ],
-            ctx,
-        );
-    }
-
-    fn save_config(&self) {
-        if !self.config_loaded {
-            return;
-        }
-        self.broadcast_settings();
-        let json = serde_json::to_string(&self.settings).unwrap_or_default();
-        let json_esc = json.replace('\'', "'\\''");
-        let cmd = format!(
-            "mkdir -p \"$HOME/.config/zellij/plugins\" && printf '%s' '{json_esc}' > \"$HOME/.config/zellij/plugins/zjbar.json\""
-        );
-        let mut ctx = BTreeMap::new();
-        ctx.insert("type".into(), "save_config".into());
-        run_command(&["sh", "-c", &cmd], ctx);
-    }
-
     fn merge_sessions(&mut self, incoming: BTreeMap<u32, SessionInfo>) {
         for (pane_id, mut session) in incoming {
             let dominated = self
@@ -355,7 +236,6 @@ impl State {
                 .map(|existing| session.last_event_ts > existing.last_event_ts)
                 .unwrap_or(true);
             if dominated {
-                // Refresh tab name from our local pane map
                 if let Some((idx, name)) = self.pane_to_tab.get(&pane_id) {
                     session.tab_index = Some(*idx);
                     session.tab_name = Some(name.clone());
