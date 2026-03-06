@@ -38,4 +38,12 @@ release: build
 		echo "Error: HEAD has no tag. Tag first with: git tag vX.Y.Z"; \
 		exit 1; \
 	fi
-	gh release create $(TAG) $(WASM) --title "$(TAG)" --generate-notes
+	@PREV=$$(git describe --tags --abbrev=0 $(TAG)^ 2>/dev/null); \
+	if [ -n "$$PREV" ]; then \
+		NOTES=$$(printf '## What'\''s Changed\n\n'; \
+			git log --pretty=format:'- %s' $$PREV..$(TAG); \
+			printf '\n\n**Full Changelog**: https://github.com/imroc/zjbar/compare/%s...$(TAG)\n' "$$PREV"); \
+	else \
+		NOTES="Initial release"; \
+	fi; \
+	gh release create $(TAG) $(WASM) --title "$(TAG)" --notes "$$NOTES"
