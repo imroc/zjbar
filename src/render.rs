@@ -29,8 +29,8 @@ fn activity_priority(activity: &Activity) -> u8 {
 
 fn activity_style(activity: &Activity) -> Style {
     match activity {
-        Activity::Init => Style { symbol: "◆", r: 137, g: 180, b: 250 },       // blue
-        Activity::Thinking => Style { symbol: "●", r: 203, g: 166, b: 247 },    // mauve
+        Activity::Init => Style { symbol: "◆", r: 122, g: 162, b: 247 },       // blue
+        Activity::Thinking => Style { symbol: "●", r: 187, g: 154, b: 247 },    // purple
         Activity::Tool(name) => {
             let symbol = match name.as_str() {
                 "Bash" => "⚡",
@@ -40,14 +40,14 @@ fn activity_style(activity: &Activity) -> Style {
                 "WebSearch" | "WebFetch" => "◈",
                 _ => "⚙",
             };
-            Style { symbol, r: 250, g: 179, b: 135 }  // peach
+            Style { symbol, r: 255, g: 158, b: 100 }  // orange
         }
-        Activity::Prompting => Style { symbol: "▶", r: 166, g: 227, b: 161 },   // green
-        Activity::Waiting => Style { symbol: "⚠", r: 243, g: 139, b: 168 },     // red
-        Activity::Notification => Style { symbol: "◇", r: 249, g: 226, b: 175 }, // yellow
-        Activity::Done => Style { symbol: "✓", r: 166, g: 227, b: 161 },         // green
-        Activity::AgentDone => Style { symbol: "✓", r: 148, g: 226, b: 213 },    // teal
-        Activity::Idle => Style { symbol: "○", r: 127, g: 132, b: 156 },         // overlay1
+        Activity::Prompting => Style { symbol: "▶", r: 158, g: 206, b: 106 },   // green
+        Activity::Waiting => Style { symbol: "⚠", r: 247, g: 118, b: 142 },     // red
+        Activity::Notification => Style { symbol: "◇", r: 224, g: 175, b: 104 }, // yellow
+        Activity::Done => Style { symbol: "✓", r: 158, g: 206, b: 106 },         // green
+        Activity::AgentDone => Style { symbol: "✓", r: 125, g: 207, b: 255 },    // cyan
+        Activity::Idle => Style { symbol: "○", r: 86, g: 95, b: 137 },           // comment
     }
 }
 
@@ -74,27 +74,26 @@ const ARROW_THIN: &str = "\u{e0b1}";
 
 type Color = (u8, u8, u8);
 
-// -- Catppuccin Mocha palette --
-const CRUST: Color = (17, 17, 27);      // #11111b
-const MANTLE: Color = (24, 24, 37);     // #181825
-const SURFACE0: Color = (49, 50, 68);   // #313244
-const TEXT: Color = (205, 214, 244);     // #cdd6f4
-const OVERLAY1: Color = (127, 132, 156); // #7f849c
+// -- Tokyo Night palette --
+const BG: Color = (26, 27, 38);           // #1a1b26
+const BG_DARK: Color = (22, 22, 30);      // #16161e
+const BG_HIGHLIGHT: Color = (41, 46, 66); // #292e42
+const FG: Color = (192, 202, 245);        // #c0caf5
+const FG_DARK: Color = (169, 177, 214);   // #a9b1d6
+const COMMENT: Color = (86, 95, 137);     // #565f89
 
-const SAPPHIRE: Color = (116, 199, 236); // #74c7ec
-const PEACH: Color = (250, 179, 135);    // #fab387
-const GREEN: Color = (166, 227, 161);    // #a6e3a1
-const RED: Color = (243, 139, 168);      // #f38ba8
-const MAUVE: Color = (203, 166, 247);    // #cba6f7
-const YELLOW: Color = (249, 226, 175);   // #f9e2af
-const TEAL: Color = (148, 226, 213);     // #94e2d5
-const FLAMINGO: Color = (242, 205, 205); // #f2cdcd
-const PINK: Color = (245, 194, 231);     // #f5c2e7
+const BLUE: Color = (122, 162, 247);      // #7aa2f7
+const CYAN: Color = (125, 207, 255);      // #7dcfff
+const GREEN: Color = (158, 206, 106);     // #9ece6a
+const ORANGE: Color = (255, 158, 100);    // #ff9e64
+const PURPLE: Color = (187, 154, 247);    // #bb9af7
+const RED: Color = (247, 118, 142);       // #f7768e
+const YELLOW: Color = (224, 175, 104);    // #e0af68
 
-// Bar background — use mantle (very dark, close to terminal bg for dark themes)
-const BAR_BG: Color = MANTLE;
+// Bar background — match terminal background
+const BAR_BG: Color = BG;
 // Flash: yellow tint
-const FLASH_BG_BRIGHT: Color = (100, 90, 40);
+const FLASH_BG_BRIGHT: Color = (80, 70, 30);
 
 /// Write a powerline solid arrow: fg=from, bg=to, then ARROW char.
 fn arrow(buf: &mut String, col: &mut usize, from: Color, to: Color) {
@@ -122,18 +121,18 @@ fn mode_style(mode: InputMode) -> (Color, &'static str) {
     match mode {
         InputMode::Normal => (GREEN, "NORMAL"),
         InputMode::Locked => (RED, "LOCKED"),
-        InputMode::Pane => (TEAL, "PANE"),
-        InputMode::Tab => (TEAL, "TAB"),
+        InputMode::Pane => (CYAN, "PANE"),
+        InputMode::Tab => (CYAN, "TAB"),
         InputMode::Resize => (YELLOW, "RESIZE"),
         InputMode::Move => (YELLOW, "MOVE"),
-        InputMode::Scroll => (FLAMINGO, "SCROLL"),
-        InputMode::EnterSearch => (FLAMINGO, "SEARCH"),
-        InputMode::Search => (FLAMINGO, "SEARCH"),
+        InputMode::Scroll => (ORANGE, "SCROLL"),
+        InputMode::EnterSearch => (ORANGE, "SEARCH"),
+        InputMode::Search => (ORANGE, "SEARCH"),
         InputMode::RenameTab => (YELLOW, "RENAME"),
         InputMode::RenamePane => (YELLOW, "RENAME"),
-        InputMode::Session => (PINK, "SESSION"),
-        InputMode::Prompt => (PINK, "PROMPT"),
-        InputMode::Tmux => (MAUVE, "TMUX"),
+        InputMode::Session => (PURPLE, "SESSION"),
+        InputMode::Prompt => (PURPLE, "PROMPT"),
+        InputMode::Tmux => (BLUE, "TMUX"),
     }
 }
 
@@ -174,16 +173,16 @@ pub fn render_status_bar(state: &mut State, _rows: usize, cols: usize) {
         let _ = write!(
             buf,
             "{}{}{BOLD}{session_pill_text}{RESET}",
-            bg_c(SAPPHIRE), fg_c(CRUST),
+            bg_c(BLUE), fg_c(BG_DARK),
         );
         col += session_pill_width;
-        arrow(&mut buf, &mut col, SAPPHIRE, mode_color);
+        arrow(&mut buf, &mut col, BLUE, mode_color);
 
         // mode text [mode → bar_bg]
         let _ = write!(
             buf,
             "{}{}{BOLD}{mode_pill_text}{RESET}",
-            bg_c(mode_color), fg_c(CRUST),
+            bg_c(mode_color), fg_c(BG_DARK),
         );
         col += mode_pill_width;
         arrow(&mut buf, &mut col, mode_color, BAR_BG);
@@ -191,10 +190,10 @@ pub fn render_status_bar(state: &mut State, _rows: usize, cols: usize) {
         let _ = write!(
             buf,
             "{}{}{BOLD}{session_pill_text}{RESET}",
-            bg_c(SAPPHIRE), fg_c(CRUST),
+            bg_c(BLUE), fg_c(BG_DARK),
         );
         col += session_pill_width;
-        arrow(&mut buf, &mut col, SAPPHIRE, BAR_BG);
+        arrow(&mut buf, &mut col, BLUE, BAR_BG);
     }
 
     state.prefix_click_region = Some((0, col));
@@ -223,7 +222,7 @@ pub fn render_status_bar(state: &mut State, _rows: usize, cols: usize) {
     let _ = std::io::stdout().flush();
 }
 
-/// Render tabs in gruvbox-inspired powerline style with Catppuccin Mocha colors.
+/// Render tabs in powerline style with Tokyo Night colors.
 ///
 /// Each tab: `[bar→accent ARROW][accent: " index "][accent: THIN_ARROW][accent: " name "][accent→bar ARROW]`
 ///
@@ -324,26 +323,26 @@ fn render_tabs(
                     .unwrap_or(false)
             });
 
-        // Tab background color: active=peach, inactive=surface0, flash=yellow
+        // Tab background color: active=highlight, inactive=dark, flash=yellow
         let tab_bg = if is_flash_bright {
             FLASH_BG_BRIGHT
         } else if is_active {
-            PEACH
+            BG_HIGHLIGHT
         } else {
-            SURFACE0
+            BG_DARK
         };
 
         // Text color on the tab
         let tab_fg = if is_flash_bright {
             YELLOW
         } else if is_active {
-            CRUST  // dark text on bright peach
+            FG     // bright text on highlight bg
         } else {
-            TEXT   // light text on dark surface0
+            FG_DARK // dimmer text on dark bg
         };
 
         // Thin arrow line color (between index and name)
-        let thin_color = if is_active { CRUST } else { OVERLAY1 };
+        let thin_color = if is_active { COMMENT } else { COMMENT };
 
         // Truncate name
         let char_count = tab_name.chars().count();
@@ -407,7 +406,7 @@ fn render_tabs(
                     let _ = write!(
                         buf,
                         " {RESET}{}{}{}",
-                        bg_c(tab_bg), fg_c(OVERLAY1), es,
+                        bg_c(tab_bg), fg_c(COMMENT), es,
                     );
                     *col += 1 + es.len();
                 }
@@ -450,17 +449,17 @@ fn render_tabs(
 
 fn notify_mode_label(mode: NotifyMode) -> (&'static str, &'static str, String, String) {
     match mode {
-        NotifyMode::Always => ("●", "Notify: always", fg_c(GREEN), fg_c(TEXT)),
+        NotifyMode::Always => ("●", "Notify: always", fg_c(GREEN), fg_c(FG)),
         NotifyMode::Unfocused => ("◐", "Notify: unfocused", fg_c(YELLOW), fg_c(YELLOW)),
-        NotifyMode::Never => ("○", "Notify: off", fg_c(OVERLAY1), fg_c(OVERLAY1)),
+        NotifyMode::Never => ("○", "Notify: off", fg_c(COMMENT), fg_c(COMMENT)),
     }
 }
 
 fn flash_mode_label(mode: FlashMode) -> (&'static str, &'static str, String, String) {
     match mode {
-        FlashMode::Persist => ("●", "Flash: persist", fg_c(GREEN), fg_c(TEXT)),
+        FlashMode::Persist => ("●", "Flash: persist", fg_c(GREEN), fg_c(FG)),
         FlashMode::Once => ("◐", "Flash: brief", fg_c(YELLOW), fg_c(YELLOW)),
-        FlashMode::Off => ("○", "Flash: off", fg_c(OVERLAY1), fg_c(OVERLAY1)),
+        FlashMode::Off => ("○", "Flash: off", fg_c(COMMENT), fg_c(COMMENT)),
     }
 }
 
@@ -520,9 +519,9 @@ fn render_settings_menu(state: &mut State, buf: &mut String, col: &mut usize) {
         *col += 2;
         let enabled = state.settings.elapsed_time;
         let (symbol, sym_color, label_color) = if enabled {
-            ("●", fg_c(GREEN), fg_c(TEXT))
+            ("●", fg_c(GREEN), fg_c(FG))
         } else {
-            ("○", fg_c(OVERLAY1), fg_c(OVERLAY1))
+            ("○", fg_c(COMMENT), fg_c(COMMENT))
         };
         let label = if enabled { "Elapsed time: on" } else { "Elapsed time: off" };
         render_tristate(

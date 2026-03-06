@@ -1,10 +1,10 @@
 # zjbar
 
-A Zellij status bar plugin that replaces the default tab bar with Claude Code activity awareness and a Catppuccin Mocha powerline theme.
+A Zellij status bar plugin that replaces the default tab bar with Claude Code activity awareness and a Tokyo Night powerline theme.
 
 ## Features
 
-- **Powerline tab bar** — Catppuccin Mocha themed tab bar with sharp powerline arrows between segments
+- **Powerline tab bar** — Tokyo Night themed tab bar with sharp powerline arrows between segments
 - **Session & mode display** — shows session name and input mode (NORMAL, LOCKED, PANE, etc.) with color-coded pills
 - **Live Claude activity indicators** — see what every Claude Code session is doing at a glance
 - **Clickable tabs** — click any tab to switch; clicking a waiting (⚠) session focuses the exact pane

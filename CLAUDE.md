@@ -2,7 +2,7 @@
 
 ## Overview
 
-zjbar is a Zellij WASM plugin that replaces the default tab bar with a Catppuccin Mocha powerline-themed status bar featuring Claude Code activity awareness.
+zjbar is a Zellij WASM plugin that replaces the default tab bar with a Tokyo Night powerline-themed status bar featuring Claude Code activity awareness.
 
 ## Architecture
 
@@ -45,4 +45,4 @@ zellij --layout layout.kdl
 - All commit messages and code comments must be in **English**.
 - The WASM target is `wasm32-wasip1` (configured in `.cargo/config.toml`).
 - Release profile uses `opt-level = "s"` and LTO for minimal binary size.
-- Color palette follows Catppuccin Mocha. All color constants are defined in `render.rs`.
+- Color palette follows Tokyo Night. All color constants are defined in `render.rs`.
