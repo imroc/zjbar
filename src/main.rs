@@ -1,5 +1,4 @@
 mod event_handler;
-mod installer;
 mod render;
 mod state;
 mod tab_pane_map;
@@ -136,10 +135,6 @@ impl ZellijPlugin for State {
                         self.config_loaded = true;
                         true
                     }
-                    Some("install_hooks") => {
-                        self.hooks_installed = true;
-                        false
-                    }
                     _ => false,
                 }
             }
@@ -164,10 +159,6 @@ impl ZellijPlugin for State {
                 // because it ran before permissions were granted)
                 if !self.config_loaded {
                     self.load_config();
-                }
-                // Auto-install hook script and register Claude Code hooks
-                if !self.hooks_installed {
-                    installer::run_install();
                 }
                 false
             }

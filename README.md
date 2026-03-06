@@ -1,19 +1,88 @@
 # zjbar
 
-A Zellij status bar plugin that replaces the default tab bar with Claude Code activity awareness and a Tokyo Night powerline theme.
+A Zellij status bar plugin with a Tokyo Night powerline theme and optional Claude Code activity awareness.
 
 ## Features
 
 - **Powerline tab bar** — Tokyo Night themed tab bar with sharp powerline arrows between segments
 - **Session & mode display** — shows session name and input mode (NORMAL, LOCKED, PANE, etc.) with color-coded pills
-- **Live Claude activity indicators** — see what every Claude Code session is doing at a glance
-- **Clickable tabs** — click any tab to switch; clicking a waiting (⚠) session focuses the exact pane
-- **Permission flash** — tabs pulse yellow when a permission request arrives
-- **Desktop notifications** — macOS/Linux notification on permission requests with click-to-focus support
-- **Elapsed time** — shows how long a session has been in its current state
+- **Clickable tabs** — click any tab to switch
+- **Optional Claude Code integration** — live activity indicators, permission flash, desktop notifications, and click-to-focus
 - **Multi-instance sync** — all Zellij tabs show a unified view of all Claude sessions
 
-### Activity Symbols
+## Install
+
+### Prerequisites
+
+- [Zellij](https://zellij.dev)
+
+### Option 1: Claude Code plugin (recommended)
+
+Install as a Claude Code plugin to get automatic hook registration and a one-command setup:
+
+```
+/plugin marketplace add imroc/zjbar
+/plugin install zjbar@zjbar
+```
+
+Then download the WASM plugin and layouts:
+
+```
+/zjbar:install
+```
+
+Restart Claude Code for hooks to take effect, then start Zellij:
+
+```bash
+zellij --layout zjbar
+```
+
+### Option 2: Zellij layout only
+
+Add the plugin to your Zellij layout directly (no Claude Code integration):
+
+```kdl
+default_tab_template {
+    children
+    pane size=1 borderless=true {
+        plugin location="https://github.com/imroc/zjbar/releases/latest/download/zjbar.wasm"
+    }
+}
+```
+
+### Option 3: Build from source
+
+Prerequisites: [Rust](https://rustup.rs), [jq](https://jqlang.github.io/jq/) (for hooks)
+
+```bash
+git clone https://github.com/imroc/zjbar.git
+cd zjbar
+./install.sh
+```
+
+Or use make targets directly:
+
+```bash
+make               # build wasm + update plugin
+make install       # build + install layouts
+make install-hooks # register Claude Code hooks
+make uninstall     # remove plugin and layouts
+make release       # create GitHub release (requires tag on HEAD)
+```
+
+The hook installer auto-detects the settings path (`~/.claude-internal/settings.json` or `~/.claude/settings.json`). To specify a custom path:
+
+```bash
+CLAUDE_SETTINGS=~/.codebuddy/settings.json make install-hooks
+```
+
+### Optional: click-to-focus notifications
+
+```bash
+brew install terminal-notifier
+```
+
+## Claude Code Activity Symbols
 
 | Symbol | Meaning                   |
 | ------ | ------------------------- |
@@ -28,59 +97,6 @@ A Zellij status bar plugin that replaces the default tab bar with Claude Code ac
 | ▶      | Waiting for user prompt   |
 | ⚠      | Waiting for permission    |
 | ✓      | Done                      |
-
-## Install
-
-### Prerequisites
-
-- [Zellij](https://zellij.dev)
-- [jq](https://jqlang.github.io/jq/) — used by the hook script at runtime
-
-### Quick install
-
-Add the plugin to your Zellij layout — that's it:
-
-```kdl
-default_tab_template {
-    children
-    pane size=1 borderless=true {
-        plugin location="https://github.com/imroc/zjbar/releases/latest/download/zjbar.wasm"
-    }
-}
-```
-
-On first load, the plugin automatically installs the hook script and registers it with Claude Code.
-
-### Build from source
-
-Prerequisites: [Rust](https://rustup.rs)
-
-```bash
-git clone https://github.com/imroc/zjbar.git
-cd zjbar
-./install.sh
-```
-
-Or use make targets directly:
-
-```bash
-make            # build wasm + update plugin
-make install    # build + install layouts + register hooks
-make uninstall  # remove plugin, layouts and hooks
-make release    # create GitHub release (requires tag on HEAD)
-```
-
-If your Claude Code compatible tool stores settings in a different location (e.g. `~/.codebuddy/settings.json`), specify it via `CLAUDE_SETTINGS`:
-
-```bash
-CLAUDE_SETTINGS=~/.codebuddy/settings.json make install
-```
-
-### Optional: click-to-focus notifications
-
-```bash
-brew install terminal-notifier
-```
 
 ## Settings
 
@@ -97,7 +113,7 @@ Settings are persisted to `~/.config/zellij/plugins/zjbar.json`.
 ## How It Works
 
 1. **WASM plugin** — runs inside Zellij, renders the status bar, manages state
-2. **Hook script** — bash bridge forwarding Claude Code events via `zellij pipe`
+2. **Hook script** (optional) — bash bridge forwarding Claude Code events via `zellij pipe`
 
 ```
 Claude Code hook → zjbar-hook.sh → zellij pipe → plugin → render
@@ -107,6 +123,12 @@ Claude Code hook → zjbar-hook.sh → zellij pipe → plugin → render
 
 ```bash
 make uninstall
+```
+
+Or if installed as a Claude Code plugin:
+
+```
+/plugin uninstall zjbar@zjbar
 ```
 
 ## License

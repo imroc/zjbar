@@ -1,0 +1,15 @@
+{
+  "name": "zjbar",
+  "description": "Zellij status bar plugin with Tokyo Night theme and Claude Code activity awareness",
+  "version": "1.0.0",
+  "author": {
+    "name": "imroc",
+    "email": "roc@imroc.cc"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/imroc/zjbar",
+  "keywords": ["zellij", "status-bar", "hooks", "tokyo-night"],
+  "commands": [
+    "./commands/install.md"
+  ]
+}
