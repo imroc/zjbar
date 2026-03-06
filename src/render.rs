@@ -197,8 +197,9 @@ fn render_tabs(
     // Compute max tab name length
     let fixed_per_tab: usize = tabs.iter().map(|t| {
         let idx_str = format!("{}", t.position + 1);
-        // leading_sep + space + index + space + thin_sep + trailing_space + trailing_sep
-        sep_left_width + 1 + idx_str.len() + 1 + sep_tab_width + 1 + sep_left_width
+        let mid_sep = if t.active { sep_left_width } else { sep_tab_width };
+        // leading_sep + space + index + space + mid_sep + trailing_space + trailing_sep
+        sep_left_width + 1 + idx_str.len() + 1 + mid_sep + 1 + sep_left_width
     }).sum();
     let claude_overhead: usize = best_sessions
         .iter()
@@ -269,8 +270,17 @@ fn render_tabs(
 
         let region_start = *col;
 
-        // Leading arrow: [bar_bg → tab_bg]
-        let _ = write!(buf, "{}{}{}", fg_c(cfg.bar_bg), bg_c(tab_bg), cfg.separator_left);
+        // Determine index colors (active tabs get a highlighted index)
+        let (idx_bg, idx_fg) = if is_flash_bright {
+            (cfg.flash_bg, cfg.flash_fg)
+        } else if is_active {
+            (cfg.tab_active_index_bg, cfg.tab_active_index_fg)
+        } else {
+            (tab_bg, tab_fg)
+        };
+
+        // Leading arrow: [bar_bg → idx_bg]
+        let _ = write!(buf, "{}{}{}", fg_c(cfg.bar_bg), bg_c(idx_bg), cfg.separator_left);
         *col += sep_left_width;
 
         // Index part: " N "
@@ -278,13 +288,20 @@ fn render_tabs(
         let _ = write!(
             buf,
             "{}{}{BOLD} {} {RESET}",
-            bg_c(tab_bg), fg_c(tab_fg), idx_str,
+            bg_c(idx_bg), fg_c(idx_fg), idx_str,
         );
         *col += 1 + idx_str.len() + 1;
 
-        // Thin separator between index and name
-        let _ = write!(buf, "{}{}{}", bg_c(tab_bg), fg_c(cfg.tab_separator_fg), cfg.separator_tab);
-        *col += sep_tab_width;
+        // Transition from index to name area
+        if is_active && !is_flash_bright {
+            // Powerline arrow: idx_bg → tab_bg
+            let _ = write!(buf, "{}{}{}", fg_c(idx_bg), bg_c(tab_bg), cfg.separator_left);
+            *col += sep_left_width;
+        } else {
+            // Thin separator (same bg)
+            let _ = write!(buf, "{}{}{}", bg_c(tab_bg), fg_c(cfg.tab_separator_fg), cfg.separator_tab);
+            *col += sep_tab_width;
+        }
 
         // Name part: " name "
         let _ = write!(

@@ -74,6 +74,8 @@ const D_SESSION_BG: Color = (122, 162, 247);    // #7aa2f7
 const D_SESSION_FG: Color = (22, 22, 30);       // #16161e
 const D_TAB_ACTIVE_BG: Color = (41, 46, 66);    // #292e42
 const D_TAB_ACTIVE_FG: Color = (192, 202, 245); // #c0caf5
+const D_TAB_ACTIVE_INDEX_BG: Color = (122, 162, 247); // #7aa2f7
+const D_TAB_ACTIVE_INDEX_FG: Color = (22, 22, 30);    // #16161e
 const D_TAB_INACTIVE_BG: Color = (22, 22, 30);  // #16161e
 const D_TAB_INACTIVE_FG: Color = (169, 177, 214); // #a9b1d6
 const D_TAB_SEPARATOR: Color = (86, 95, 137);   // #565f89
@@ -119,6 +121,8 @@ pub struct BarConfig {
     // Tab - active
     pub tab_active_bg: Color,
     pub tab_active_fg: Color,
+    pub tab_active_index_bg: Color,
+    pub tab_active_index_fg: Color,
 
     // Tab - inactive
     pub tab_inactive_bg: Color,
@@ -194,6 +198,8 @@ impl BarConfig {
 
             tab_active_bg: get_color(config, "tab_active_bg", D_TAB_ACTIVE_BG),
             tab_active_fg: get_color(config, "tab_active_fg", D_TAB_ACTIVE_FG),
+            tab_active_index_bg: get_color(config, "tab_active_index_bg", D_TAB_ACTIVE_INDEX_BG),
+            tab_active_index_fg: get_color(config, "tab_active_index_fg", D_TAB_ACTIVE_INDEX_FG),
             tab_inactive_bg: get_color(config, "tab_inactive_bg", D_TAB_INACTIVE_BG),
             tab_inactive_fg: get_color(config, "tab_inactive_fg", D_TAB_INACTIVE_FG),
             tab_separator_fg: get_color(config, "tab_separator_fg", D_TAB_SEPARATOR),

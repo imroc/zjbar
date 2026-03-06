@@ -19,6 +19,8 @@ layout {
                 // -- Active tab --
                 // tab_active_bg "#292e42"
                 // tab_active_fg "#c0caf5"
+                // tab_active_index_bg "#7aa2f7"
+                // tab_active_index_fg "#16161e"
 
                 // -- Inactive tab --
                 // tab_inactive_bg "#16161e"
