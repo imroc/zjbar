@@ -45,7 +45,7 @@ cp target/wasm32-wasip1/release/zjbar.wasm ~/.config/zellij/plugins/
 
 # 2. Start Zellij in a detached tmux session
 tmux new-session -d -s zjbar_test -x 120 -y 30 \
-  'zellij --layout /Users/roc/dev/zjbar/layout.kdl'
+  'zellij --layout layout.kdl'
 sleep 2  # wait for Zellij to initialize
 
 # 3. Check the status bar (last line of the pane)
